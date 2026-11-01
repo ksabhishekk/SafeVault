@@ -24,4 +24,8 @@
     <ProjectReference Include="..\SafeVault.Web\SafeVault.Web.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\database.sql" Link="database.sql" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
