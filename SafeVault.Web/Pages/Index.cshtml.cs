@@ -27,6 +27,11 @@ public class IndexModel(UserRepository userRepository) : PageModel
             ModelState.AddModelError("Input.Email", "Enter a valid email address.");
         }
 
+        if (!InputValidator.IsValidPassword(Input.Password))
+        {
+            ModelState.AddModelError("Input.Password", "Use a password of 8 to 72 characters and at most 72 UTF-8 bytes.");
+        }
+
         if (!ModelState.IsValid)
         {
             return Page();
@@ -50,14 +55,17 @@ public class IndexModel(UserRepository userRepository) : PageModel
     public sealed class RegistrationInput
     {
         [Required]
+        [StringLength(30)]
         [Display(Name = "Username")]
         public string Username { get; set; } = string.Empty;
 
         [Required]
+        [StringLength(254)]
         [Display(Name = "Email")]
         public string Email { get; set; } = string.Empty;
 
         [Required]
+        [StringLength(72, MinimumLength = 8)]
         [MinLength(8)]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]

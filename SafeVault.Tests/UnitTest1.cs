@@ -82,4 +82,33 @@ public sealed class InputAndRepositoryTests
     {
         Assert.That(InputValidator.IsValidEmail(email), Is.False);
     }
+
+    [Test]
+    public void EmailLongerThan254CharactersIsRejected()
+    {
+        var email = $"{new string('a', 243)}@example.com";
+
+        Assert.That(email.Length, Is.GreaterThan(254));
+        Assert.That(InputValidator.IsValidEmail(email), Is.False);
+    }
+
+    [TestCase("short")]
+    [TestCase("éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé")]
+    public void PasswordsOutsideBcryptSafeBoundsAreRejected(string password)
+    {
+        Assert.That(InputValidator.IsValidPassword(password), Is.False);
+    }
+
+    [Test]
+    public void PasswordLongerThan72CharactersIsRejected()
+    {
+        Assert.That(InputValidator.IsValidPassword(new string('1', 73)), Is.False);
+    }
+
+    [TestCase("correct-horse")]
+    [TestCase("password123")]
+    public void PasswordsWithinBcryptSafeBoundsAreAccepted(string password)
+    {
+        Assert.That(InputValidator.IsValidPassword(password), Is.True);
+    }
 }
