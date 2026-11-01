@@ -35,7 +35,7 @@ public class IndexModel(UserRepository userRepository) : PageModel
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(Input.Password);
         try
         {
-            userRepository.InsertUser(Input.Username, Input.Email, passwordHash);
+            userRepository.InsertUser(Input.Username, Input.Email, passwordHash, role: "user");
         }
         catch (SqliteException exception) when (exception.SqliteExtendedErrorCode == 2067)
         {
