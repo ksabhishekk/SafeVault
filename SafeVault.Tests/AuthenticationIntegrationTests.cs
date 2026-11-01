@@ -25,7 +25,11 @@ public sealed class AuthenticationIntegrationTests
                 services.RemoveAll<UserRepository>();
                 services.AddSingleton(new UserRepository($"Data Source={_databasePath};Pooling=False"));
             }));
-        _client = _factory.CreateClient();
+        _client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            AllowAutoRedirect = false
+        });
 
         var repository = _factory.Services.GetRequiredService<UserRepository>();
         repository.InsertUser("normal_user", "normal@example.com", BCrypt.Net.BCrypt.HashPassword("user-password", 4));
@@ -63,11 +67,13 @@ public sealed class AuthenticationIntegrationTests
     {
         var response = await PostLoginAsync("normal_user", "user-password");
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-        Assert.That(await response.Content.ReadAsStringAsync(), Does.Contain("Create an account"));
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        var setCookie = string.Join("; ", response.Headers.GetValues("Set-Cookie"));
+        Assert.That(setCookie, Does.Contain("httponly"));
+        Assert.That(setCookie, Does.Contain("secure"));
 
         var protectedResponse = await _client.GetAsync("/Admin");
-        Assert.That(protectedResponse.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+        Assert.That(protectedResponse.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
     }
 
     [Test]
@@ -77,8 +83,11 @@ public sealed class AuthenticationIntegrationTests
 
         var response = await _client.GetAsync("/Admin");
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
-        Assert.That(await response.Content.ReadAsStringAsync(), Does.Contain("Access denied"));
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        Assert.That(response.Headers.Location?.AbsolutePath, Is.EqualTo("/AccessDenied"));
+        var deniedPage = await _client.GetAsync("/AccessDenied");
+        Assert.That(deniedPage.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+        Assert.That(await deniedPage.Content.ReadAsStringAsync(), Does.Contain("Access denied"));
     }
 
     [Test]
@@ -92,7 +101,49 @@ public sealed class AuthenticationIntegrationTests
         Assert.That(await response.Content.ReadAsStringAsync(), Does.Contain("Only administrators can view this page."));
     }
 
+    [Test]
+    public async Task LoginRejectsRequestsWithoutAntiforgeryToken()
+    {
+        var response = await _client.PostAsync("/Login", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Input.Username"] = "normal_user",
+            ["Input.Password"] = "user-password"
+        }));
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+    }
+
+    [Test]
+    public async Task LoginRateLimitsRepeatedAttemptsFromSameAddress()
+    {
+        HttpResponseMessage? lastResponse = null;
+        var token = await GetAntiforgeryTokenAsync();
+        for (var attempt = 0; attempt < 6; attempt++)
+        {
+            lastResponse = await _client.PostAsync("/Login", new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["Input.Username"] = "normal_user",
+                ["Input.Password"] = "wrong-password",
+                ["__RequestVerificationToken"] = token
+            }));
+        }
+
+        Assert.That(lastResponse!.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests));
+        Assert.That(await lastResponse.Content.ReadAsStringAsync(), Does.Contain("Too many login attempts"));
+    }
+
     private async Task<HttpResponseMessage> PostLoginAsync(string username, string password)
+    {
+        var token = await GetAntiforgeryTokenAsync();
+        return await _client.PostAsync("/Login", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Input.Username"] = username,
+            ["Input.Password"] = password,
+            ["__RequestVerificationToken"] = token
+        }));
+    }
+
+    private async Task<string> GetAntiforgeryTokenAsync()
     {
         var loginPage = await _client.GetAsync("/Login");
         var html = await loginPage.Content.ReadAsStringAsync();
@@ -101,12 +152,6 @@ public sealed class AuthenticationIntegrationTests
             @"<input name=""__RequestVerificationToken"" type=""hidden"" value=""([^""]+)""")
             .Groups[1].Value;
         Assert.That(token, Is.Not.Empty, "The login page should provide an antiforgery token.");
-
-        return await _client.PostAsync("/Login", new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["Input.Username"] = username,
-            ["Input.Password"] = password,
-            ["__RequestVerificationToken"] = token
-        }));
+        return token;
     }
 }

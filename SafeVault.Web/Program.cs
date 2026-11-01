@@ -1,5 +1,6 @@
 using SafeVault.Web.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +12,31 @@ builder.Services
     {
         options.LoginPath = "/Login";
         options.AccessDeniedPath = "/AccessDenied";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Strict;
     });
 builder.Services.AddAuthorization();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("login", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            $"{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}:{context.Request.Method}",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = context.Request.Method == HttpMethods.Post ? 5 : 1000,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsync(
+            "Too many login attempts. Please try again later.",
+            cancellationToken);
+    };
+});
 var connectionString = builder.Configuration.GetConnectionString("SafeVault")
     ?? throw new InvalidOperationException("The SafeVault connection string is not configured.");
 builder.Services.AddSingleton(new UserRepository(connectionString));
@@ -35,6 +59,7 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

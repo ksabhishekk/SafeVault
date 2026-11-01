@@ -4,10 +4,12 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using SafeVault.Web.Data;
 
 namespace SafeVault.Web.Pages;
 
+[EnableRateLimiting("login")]
 public sealed class LoginModel(UserRepository userRepository) : PageModel
 {
     [BindProperty]
@@ -24,6 +26,12 @@ public sealed class LoginModel(UserRepository userRepository) : PageModel
     {
         if (!ModelState.IsValid)
         {
+            return Page();
+        }
+
+        if (!InputValidator.IsValidPassword(Input.Password))
+        {
+            ModelState.AddModelError("Input.Password", "Invalid username or password");
             return Page();
         }
 
@@ -53,10 +61,12 @@ public sealed class LoginModel(UserRepository userRepository) : PageModel
     public sealed class LoginInput
     {
         [Required]
+        [StringLength(30)]
         [Display(Name = "Username")]
         public string Username { get; set; } = string.Empty;
 
         [Required]
+        [StringLength(72)]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
         public string Password { get; set; } = string.Empty;
