@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "dgSpecHash": "6VFlXsCT4ZQ=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\abhis\\OneDrive\\Desktop\\dotnet_microsoft_project\\SafeVault\\SafeVault.Web\\SafeVault.Web.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\abhis\\.nuget\\packages\\bcrypt.net-next\\4.2.0\\bcrypt.net-next.4.2.0.nupkg.sha512",
+    "C:\\Users\\abhis\\.nuget\\packages\\microsoft.aspnetcore.authentication.cookies\\2.3.13\\microsoft.aspnetcore.authentication.cookies.2.3.13.nupkg.sha512",
+    "C:\\Users\\abhis\\.nuget\\packages\\microsoft.data.sqlite\\10.0.14\\microsoft.data.sqlite.10.0.14.nupkg.sha512",
+    "C:\\Users\\abhis\\.nuget\\packages\\microsoft.data.sqlite.core\\10.0.14\\microsoft.data.sqlite.core.10.0.14.nupkg.sha512",
+    "C:\\Users\\abhis\\.nuget\\packages\\sqlitepclraw.bundle_e_sqlite3\\2.1.13\\sqlitepclraw.bundle_e_sqlite3.2.1.13.nupkg.sha512",
+    "C:\\Users\\abhis\\.nuget\\packages\\sqlitepclraw.core\\2.1.13\\sqlitepclraw.core.2.1.13.nupkg.sha512",
+    "C:\\Users\\abhis\\.nuget\\packages\\sqlitepclraw.lib.e_sqlite3\\2.1.13\\sqlitepclraw.lib.e_sqlite3.2.1.13.nupkg.sha512",
+    "C:\\Users\\abhis\\.nuget\\packages\\sqlitepclraw.provider.e_sqlite3\\2.1.13\\sqlitepclraw.provider.e_sqlite3.2.1.13.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1510",
+      "level": "Warning",
+      "message": "PackageReference Microsoft.AspNetCore.Authentication.Cookies will not be pruned. This package is automatically available and does not need to be referenced explicitly. Remove the PackageReference item.",
+      "projectPath": "C:\\Users\\abhis\\OneDrive\\Desktop\\dotnet_microsoft_project\\SafeVault\\SafeVault.Web\\SafeVault.Web.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\Users\\abhis\\OneDrive\\Desktop\\dotnet_microsoft_project\\SafeVault\\SafeVault.Web\\SafeVault.Web.csproj",
+      "libraryId": "Microsoft.AspNetCore.Authentication.Cookies",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    }
+  ]
+}
